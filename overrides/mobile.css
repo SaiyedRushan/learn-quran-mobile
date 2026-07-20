@@ -1,0 +1,13 @@
+/* App-only style tweaks, appended to the web build's CSS by sync-web.mjs.
+   The website keeps its bottom-sheet dialogs on phones; in the native app,
+   dialogs are centered and capped to the viewport so they never overflow. */
+.modal-overlay {
+  align-items: center;
+  padding: 16px;
+}
+.modal {
+  border-radius: var(--border-radius-lg);
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.5);
+  max-height: 85vh;
+  overflow-y: auto;
+}

@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<resources>
+<resources xmlns:tools="http://schemas.android.com/tools">
 
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
@@ -13,6 +13,12 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
+        <!-- Keep the WebView between the system bars instead of Android 15's
+             forced edge-to-edge; bars match the app's dark background. -->
+        <item name="android:windowOptOutEdgeToEdgeEnforcement" tools:targetApi="35">true</item>
+        <item name="android:statusBarColor">#1c1c1e</item>
+        <item name="android:navigationBarColor">#1c1c1e</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 
 

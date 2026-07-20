@@ -23,7 +23,9 @@ await cp(webOut, www, {recursive: true});
 await mkdir(path.join(www, "fonts"), {recursive: true});
 await cp(fontsDir, path.join(www, "fonts"), {recursive: true});
 
-// Point the compiled CSS at the bundled fonts instead of fonts.googleapis.com.
+// Point the compiled CSS at the bundled fonts instead of fonts.googleapis.com,
+// and append the app-only style overrides so they win the cascade.
+const overrides = await readFile(path.join(root, "overrides", "mobile.css"), "utf8");
 const cssDir = path.join(www, "_next", "static", "css");
 let rewrites = 0;
 for (const file of await readdir(cssDir)) {
@@ -32,7 +34,7 @@ for (const file of await readdir(cssDir)) {
   const css = await readFile(p, "utf8");
   const next = css.replace(/@import url\((["']?)https:\/\/fonts\.googleapis\.com[^)]*\1\);?/g, '@import url("/fonts/fonts.css");');
   if (next !== css) {
-    await writeFile(p, next);
+    await writeFile(p, next + "\n" + overrides);
     rewrites++;
   }
 }
