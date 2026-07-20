@@ -1,0 +1,4 @@
+User-Agent: *
+Allow: /
+
+Sitemap: https://learn-quran.app/sitemap.xml

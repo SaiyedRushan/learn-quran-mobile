@@ -1,0 +1,20 @@
+{
+  "name": "learn-quran-mobile",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Offline Android & iOS app for Learn Quran — wraps the static web app in Capacitor.",
+  "scripts": {
+    "sync": "node scripts/sync-web.mjs && npx cap sync",
+    "fonts": "node scripts/bundle-fonts.mjs",
+    "android": "npx cap open android",
+    "ios": "npx cap open ios"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.4.4"
+  },
+  "dependencies": {
+    "@capacitor/android": "^7.4.4",
+    "@capacitor/core": "^7.4.4",
+    "@capacitor/ios": "^7.4.4"
+  }
+}

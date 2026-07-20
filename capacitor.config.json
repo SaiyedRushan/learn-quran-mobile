@@ -1,0 +1,8 @@
+{
+  "appId": "app.learnquran.mobile",
+  "appName": "Learn Quran",
+  "webDir": "www",
+  "android": {
+    "allowMixedContent": false
+  }
+}
