@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#123329"/>
+      <stop offset="0.5" stop-color="#15181a"/>
+      <stop offset="1" stop-color="#141416"/>
+    </linearGradient>
+    <linearGradient id="badge" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1D9E75"/>
+      <stop offset="1" stop-color="#0f6e56"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.26" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#1D9E75" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#1D9E75" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1024" height="1024" fill="url(#bg)"/>
+  <rect width="1024" height="1024" fill="url(#glow)"/>
+  <rect x="98" y="402" width="200" height="200" rx="48" fill="url(#badge)"/>
+  <text x="198" y="556" font-family="'Amiri Quran','Geeza Pro',serif" font-size="138" fill="#ffffff" text-anchor="middle">&#1602;</text>
+  <text x="350" y="488" font-family="'Helvetica Neue','Arial',sans-serif" font-weight="700" font-size="74" fill="#f0f0ec">Learn Quran</text>
+  <text x="353" y="546" font-family="'Helvetica Neue','Arial',sans-serif" font-size="31" fill="#7fd4b4">Memorize the Quran, Juz by Juz</text>
+  <text x="353" y="590" font-family="'Helvetica Neue','Arial',sans-serif" font-size="25" fill="#9a9a92">Offline &#183; guides, drills &amp; games &#183; no ads</text>
+</svg>
