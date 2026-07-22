@@ -24,9 +24,9 @@ listings. Character limits are noted; current text is within them.
 
 ### Description (max 4000 chars)
 Learn Quran helps you memorize and actually understand the short surahs you
-recite every day. Instead of walls of Arabic to repeat by rote, every surah is
-broken into small, themed sections with a plain-English explanation and a memory
-hook — so what you memorize genuinely means something.
+recite every day. No more repeating Arabic you don't understand — every surah is
+broken into small, themed sections, each with a plain-English explanation and a
+memory hook, so what you memorize genuinely means something.
 
 Covers Juz 29 (Tabārak) and Juz 30 (Juz ʿAmma), the surahs most of us use in
 daily prayer, and grows from there.
