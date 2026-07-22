@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="2732" height="2732" viewBox="0 0 2732 2732">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1D9E75"/>
+      <stop offset="1" stop-color="#0f6e56"/>
+    </linearGradient>
+  </defs>
+  <rect width="2732" height="2732" fill="#141416"/>
+  <rect x="1096" y="1096" width="540" height="540" rx="120" fill="url(#g)"/>
+  <text x="1372" y="1500" font-family="'Amiri Quran','Geeza Pro','Times New Roman',serif" font-size="330" fill="#ffffff" text-anchor="middle">ق</text>
+</svg>
