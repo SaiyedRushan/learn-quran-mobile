@@ -3,6 +3,7 @@ node_modules/
 # Signing secrets — NEVER commit these. Back them up somewhere safe instead.
 *.jks
 *.keystore
+*.base64.txt
 android/keystore.properties
 
 # Android build outputs
