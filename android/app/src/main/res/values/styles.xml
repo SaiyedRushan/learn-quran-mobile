@@ -13,12 +13,11 @@
         <item name="windowActionBar">false</item>
         <item name="windowNoTitle">true</item>
         <item name="android:background">@null</item>
-        <!-- Keep the WebView between the system bars instead of Android 15's
-             forced edge-to-edge; bars match the app's dark background. -->
-        <item name="android:windowOptOutEdgeToEdgeEnforcement" tools:targetApi="35">true</item>
-        <item name="android:statusBarColor">#1c1c1e</item>
-        <item name="android:navigationBarColor">#1c1c1e</item>
+        <!-- Android 16 enforces edge-to-edge and ignores the old opt-out flag.
+             MainActivity insets the WebView by the system-bar sizes over a dark
+             window background; these keep the bar icons light for the dark bars. -->
         <item name="android:windowLightStatusBar">false</item>
+        <item name="android:windowLightNavigationBar" tools:targetApi="27">false</item>
     </style>
 
 

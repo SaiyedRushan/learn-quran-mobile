@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="500" viewBox="0 0 1024 500">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0" stop-color="#123329"/>
@@ -9,16 +9,16 @@
       <stop offset="0" stop-color="#1D9E75"/>
       <stop offset="1" stop-color="#0f6e56"/>
     </linearGradient>
-    <radialGradient id="glow" cx="0.26" cy="0.5" r="0.5">
+    <radialGradient id="glow" cx="0.26" cy="0.5" r="0.6">
       <stop offset="0" stop-color="#1D9E75" stop-opacity="0.28"/>
       <stop offset="1" stop-color="#1D9E75" stop-opacity="0"/>
     </radialGradient>
   </defs>
-  <rect width="1024" height="1024" fill="url(#bg)"/>
-  <rect width="1024" height="1024" fill="url(#glow)"/>
-  <rect x="98" y="402" width="200" height="200" rx="48" fill="url(#badge)"/>
-  <text x="198" y="556" font-family="'Amiri Quran','Geeza Pro',serif" font-size="138" fill="#ffffff" text-anchor="middle">&#1602;</text>
-  <text x="350" y="488" font-family="'Helvetica Neue','Arial',sans-serif" font-weight="700" font-size="74" fill="#f0f0ec">Learn Quran</text>
-  <text x="353" y="546" font-family="'Helvetica Neue','Arial',sans-serif" font-size="31" fill="#7fd4b4">Memorize the Quran, Juz by Juz</text>
-  <text x="353" y="590" font-family="'Helvetica Neue','Arial',sans-serif" font-size="25" fill="#9a9a92">Offline &#183; guides, drills &amp; duas &#183; no ads</text>
+  <rect width="1024" height="500" fill="url(#bg)"/>
+  <rect width="1024" height="500" fill="url(#glow)"/>
+  <rect x="96" y="150" width="200" height="200" rx="48" fill="url(#badge)"/>
+  <text x="196" y="308" font-family="'Amiri Quran','Geeza Pro',serif" font-size="140" fill="#ffffff" text-anchor="middle">&#1602;</text>
+  <text x="350" y="232" font-family="'Helvetica Neue','Arial',sans-serif" font-weight="700" font-size="76" fill="#f0f0ec">Learn Quran</text>
+  <text x="353" y="292" font-family="'Helvetica Neue','Arial',sans-serif" font-size="32" fill="#7fd4b4">Memorize the Quran, Juz by Juz</text>
+  <text x="353" y="338" font-family="'Helvetica Neue','Arial',sans-serif" font-size="26" fill="#9a9a92">Offline &#183; ad-free &#183; no sign-up</text>
 </svg>
