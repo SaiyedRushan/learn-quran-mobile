@@ -2,7 +2,7 @@
 
 Offline Android & iOS app for [Learn Quran](https://learn-quran.app), built with
 [Capacitor](https://capacitorjs.com). It wraps the static export of the
-`learn-quran` Next.js site in native shells, so every guide, game, and dua works
+`learn-quran` Next.js site in native shells, so every guide, drill, and dua works
 with **no internet connection**:
 
 - All Quran text, translations, transliterations, and guides are bundled in the app.

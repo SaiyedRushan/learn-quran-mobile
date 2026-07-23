@@ -10,7 +10,7 @@ App name:
 Learn Quran
 
 Short description (max 80 chars):
-Offline, ad-free guides, drills & games to memorize and understand the Quran.
+Offline, ad-free guides & drills to memorize and understand the Quran.
 
 Full description:
 Learn Quran helps you memorize and actually understand the short surahs you recite every day. No more repeating Arabic you don't understand — every surah is broken into small, themed sections, each with a plain-English explanation and a memory hook, so what you memorize genuinely means something.
@@ -18,14 +18,14 @@ Learn Quran helps you memorize and actually understand the short surahs you reci
 Covers Juz 29 (Tabārak) and Juz 30 (Juz ʿAmma), the surahs most of us use in daily prayer, and grows from there.
 
 FULLY OFFLINE
-Everything is bundled in the app. All Quran text, translations, transliterations, guides, duas, and games work with no internet connection.
+Everything is bundled in the app. All Quran text, translations, transliterations, guides, duas, and drills work with no internet connection.
 
 WHAT'S INSIDE
 • Section-by-section guides with an overview, key themes, and a memory hook for each part.
 • Memorize mode — a guided drill that removes one crutch at a time.
 • Arabic vocabulary with transliteration and meaning.
 • Recitation guide — natural stopping points and tips, verse by verse.
-• Games, solo or vs a friend — fill-in-the-blanks, guess-the-translation, and order-the-verses.
+• Drills, solo or vs a friend — fill-in-the-blanks, guess-the-translation, and order-the-verses.
 • Prayer duas with transliteration and meaning.
 • Progress that stays with you.
 

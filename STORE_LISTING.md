@@ -20,7 +20,7 @@ listings. Character limits are noted; current text is within them.
 > Memorize the Quran, Juz by Juz
 
 ### Promotional text (max 170 chars, editable anytime without review)
-> Free, ad-free, and fully offline. Section-by-section guides, memory hooks, key vocabulary, prayer duas, and games for Juz 29 & 30 — no account, ever.
+> Free, ad-free, and fully offline. Section-by-section guides, memory hooks, key vocabulary, prayer duas, and drills for Juz 29 & 30 — no account, ever.
 
 ### Description (max 4000 chars)
 Learn Quran helps you memorize and actually understand the short surahs you
@@ -33,7 +33,7 @@ daily prayer, and grows from there.
 
 FULLY OFFLINE
 Everything is bundled in the app. All Quran text, translations, transliterations,
-guides, duas, and games work with no internet connection.
+guides, duas, and drills work with no internet connection.
 
 WHAT'S INSIDE
 • Section-by-section guides — each surah split into small, themed parts with an
@@ -44,8 +44,8 @@ WHAT'S INSIDE
 • Arabic vocabulary — the key words of each surah with transliteration and
   meaning, so you understand what you're reciting.
 • Recitation guide — natural stopping points and practical tips, verse by verse.
-• Games, solo or vs a friend — a fill-in-the-blanks quiz, a guess-the-translation
-  game, and an order-the-verses puzzle, with challenge links that hand a friend
+• Drills, solo or vs a friend — a fill-in-the-blanks quiz, a guess-the-translation
+  drill, and an order-the-verses puzzle, with challenge links that hand a friend
   the exact same puzzle and your score to beat.
 • Prayer duas — the supplications of the salah with transliteration and meaning.
 • Progress that stays with you — mark sections and surahs as learned and watch
@@ -70,7 +70,7 @@ Free forever. Feedback and corrections are always welcome.
 > Learn Quran is a fully offline educational app, not a web viewer. All Quran
 > text, translations, guides, duas, and interactive content are bundled and work
 > with no internet connection (please test in airplane mode). It includes
-> interactive memorization drills and multiplayer games — functionality beyond a
+> interactive memorization drills and head-to-head challenges — functionality beyond a
 > website. No account or login is required. No personal data is collected.
 
 ---
@@ -78,7 +78,7 @@ Free forever. Feedback and corrections are always welcome.
 ## Google Play Console
 
 ### Short description (max 80 chars)
-> Offline, ad-free guides, drills & games to memorize and understand the Quran.
+> Offline, ad-free guides & drills to memorize and understand the Quran.
 
 ### Full description (max 4000 chars)
 (Same as the App Store description above — reuse verbatim.)
@@ -120,4 +120,4 @@ Google Play:
 - [ ] Data safety form + content rating (above)
 
 Good screenshot candidates: a surah section guide, Memorize mode mid-drill, the
-vocabulary list, a game screen, and the duas list.
+vocabulary list, a drill screen, and the duas list.
