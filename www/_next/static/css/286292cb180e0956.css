@@ -12,3 +12,30 @@
   max-height: 85vh;
   overflow-y: auto;
 }
+
+/* The native app renders edge-to-edge under the iOS status bar / notch. Pad the
+   sticky header by the top safe-area inset so the brand and controls clear the
+   status bar; the header's own blurred background fills the inset for a clean
+   look. iOS injects the real insets as --safe-area-inset-* (see the WKWebView
+   subclass in AppDelegate.swift) because WebKit reports env() as 0 here; env()
+   is kept as a fallback. On Android the WebView is already inset below the system
+   bars, so both are 0 there and this is a no-op. Horizontal insets keep the row
+   clear of the notch in landscape. */
+.site-header {
+  padding-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+}
+.site-header-inner {
+  padding-left: max(16px, var(--safe-area-inset-left, env(safe-area-inset-left, 0px)));
+  padding-right: max(16px, var(--safe-area-inset-right, env(safe-area-inset-right, 0px)));
+}
+
+/* Memorize mode is a full-screen overlay (z-index 100) that covers the site
+   header, so it needs its own safe-area handling: the overlay's header clears
+   the status bar and its footer clears the home indicator. Same injected
+   --safe-area-inset-* variables, added on top of the existing 14px/12px. */
+.mm-header {
+  padding-top: calc(14px + var(--safe-area-inset-top, env(safe-area-inset-top, 0px)));
+}
+.mm-footer {
+  padding-bottom: calc(12px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+}

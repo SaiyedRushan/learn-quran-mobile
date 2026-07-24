@@ -1,5 +1,49 @@
 import UIKit
+import WebKit
 import Capacitor
+
+// The Capacitor WKWebView draws edge-to-edge under the status bar / Dynamic
+// Island, but WebKit reports env(safe-area-inset-*) as 0 in this configuration,
+// so CSS alone can't clear the status bar. This bridge subclass reads the real
+// native safe-area insets and exposes them to the web layer as CSS custom
+// properties (--safe-area-inset-*), which overrides/mobile.css consumes to pad
+// the sticky header. Re-applied on layout/rotation and after the page loads.
+// (Android handles the equivalent natively in MainActivity.)
+class MainViewController: CAPBridgeViewController {
+    override func viewSafeAreaInsetsDidChange() {
+        super.viewSafeAreaInsetsDidChange()
+        applySafeAreaInsets()
+    }
+
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        applySafeAreaInsets()
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        // The initial page may still be loading when layout first settles, so
+        // re-apply a few times to cover that window without a visible jump.
+        for delay in [0.1, 0.4, 1.0] {
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                self?.applySafeAreaInsets()
+            }
+        }
+    }
+
+    private func applySafeAreaInsets() {
+        guard let webView = self.webView else { return }
+        let insets = view.safeAreaInsets
+        let js = """
+        (function(){var d=document.documentElement;if(!d){return;}\
+        d.style.setProperty('--safe-area-inset-top','\(insets.top)px');\
+        d.style.setProperty('--safe-area-inset-right','\(insets.right)px');\
+        d.style.setProperty('--safe-area-inset-bottom','\(insets.bottom)px');\
+        d.style.setProperty('--safe-area-inset-left','\(insets.left)px');})();
+        """
+        webView.evaluateJavaScript(js, completionHandler: nil)
+    }
+}
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
