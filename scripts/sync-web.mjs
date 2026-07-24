@@ -39,4 +39,29 @@ for (const file of await readdir(cssDir)) {
   }
 }
 
-console.log(`Synced ${webOut} -> www (${rewrites} CSS file(s) rewired to local fonts)`);
+// The native app draws edge-to-edge under the iOS status bar / notch, so the
+// web export's viewport meta needs `viewport-fit=cover` for env(safe-area-inset-*)
+// to report real values. Inject it into every exported HTML file's viewport tag;
+// the header padding in overrides/mobile.css consumes the inset. (Harmless on the
+// website itself, but this is app-only since it only touches www.)
+async function* htmlFiles(dir) {
+  for (const entry of await readdir(dir, {withFileTypes: true})) {
+    const p = path.join(dir, entry.name);
+    if (entry.isDirectory()) yield* htmlFiles(p);
+    else if (entry.name.endsWith(".html")) yield p;
+  }
+}
+let viewports = 0;
+for await (const file of htmlFiles(www)) {
+  const html = await readFile(file, "utf8");
+  const next = html.replace(
+    /(<meta name="viewport" content=")([^"]*)(")/g,
+    (m, pre, content, post) => (/viewport-fit=/.test(content) ? m : `${pre}${content}, viewport-fit=cover${post}`),
+  );
+  if (next !== html) {
+    await writeFile(file, next);
+    viewports++;
+  }
+}
+
+console.log(`Synced ${webOut} -> www (${rewrites} CSS file(s) rewired to local fonts, ${viewports} HTML viewport(s) set to cover)`);
