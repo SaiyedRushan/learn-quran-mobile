@@ -39,6 +39,23 @@ for (const file of await readdir(cssDir)) {
   }
 }
 
+// The website loads Vercel Analytics; the app must not. In a production export
+// the script src is the relative "/_vercel/insights/script.js", which has no
+// counterpart in the bundle, so inside the app it only ever 404s against
+// capacitor://localhost — it never loads and never reports. Point it at an empty
+// data: URI so the app makes no request at all and ships no analytics loader.
+const ANALYTICS_SRC = '"/_vercel/insights/script.js"';
+const chunkDir = path.join(www, "_next", "static", "chunks");
+let analyticsStripped = 0;
+for (const file of await readdir(chunkDir, {recursive: true})) {
+  const p = path.join(chunkDir, file);
+  if (!file.endsWith(".js") || !(await stat(p)).isFile()) continue;
+  const js = await readFile(p, "utf8");
+  if (!js.includes(ANALYTICS_SRC)) continue;
+  await writeFile(p, js.replaceAll(ANALYTICS_SRC, '"data:text/javascript,"'));
+  analyticsStripped++;
+}
+
 // The native app draws edge-to-edge under the iOS status bar / notch, so the
 // web export's viewport meta needs `viewport-fit=cover` for env(safe-area-inset-*)
 // to report real values. Inject it into every exported HTML file's viewport tag;
@@ -64,4 +81,7 @@ for await (const file of htmlFiles(www)) {
   }
 }
 
-console.log(`Synced ${webOut} -> www (${rewrites} CSS file(s) rewired to local fonts, ${viewports} HTML viewport(s) set to cover)`);
+console.log(
+  `Synced ${webOut} -> www (${rewrites} CSS file(s) rewired to local fonts, ` +
+    `${viewports} HTML viewport(s) set to cover, ${analyticsStripped} chunk(s) de-analyticsed)`,
+);
