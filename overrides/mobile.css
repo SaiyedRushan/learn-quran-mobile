@@ -38,3 +38,19 @@
 .mm-footer {
   padding-bottom: calc(12px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
 }
+
+/* The website promotes the mobile app: a "Get the app" banner under the home
+   hero and a "Get the app: Android · iOS" line in every footer. Inside the app
+   itself both are nonsense — they send the user to a store page for the app
+   they are already running — so hide them here rather than branching the web
+   source. The footer line carries no class of its own, so it is matched by the
+   Play link it contains. The "More apps" footer line and the home-page cards
+   for the other apps are left alone: those point elsewhere and are meant to be
+   seen. Cosmetic and self-contained — a WebView without :has() support simply
+   keeps showing the footer line. */
+.app-cta {
+  display: none !important;
+}
+.site-footer div:has(> a[href*="play.google.com"]) {
+  display: none !important;
+}
