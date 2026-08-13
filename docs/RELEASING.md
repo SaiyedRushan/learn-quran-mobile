@@ -23,10 +23,16 @@ over-the-air update path, so a bad release can only be fixed by another binary
 and another review — the human gate is worth keeping.
 
 The tag sets the marketing version (`v1.2` → `1.2`). The build number is the
-workflow run number, which only ever increases, satisfying both stores.
-`scripts/set-version.mjs` stamps both native projects at build time, so the
-versions committed in `build.gradle` and `project.pbxproj` are just placeholders
-and no longer need hand-editing.
+workflow run number **plus 100**, which only ever increases, satisfying both
+stores. `scripts/set-version.mjs` stamps both native projects at build time, so
+the versions committed in `build.gradle` and `project.pbxproj` are just
+placeholders and no longer need hand-editing.
+
+> **Why +100.** Builds up to versionCode 5 were uploaded by hand before this
+> pipeline existed, but `github.run_number` starts at 1. Both stores reject a
+> build number that is not strictly greater than what they already hold, so the
+> run number is offset past the manual era. **Never lower this offset** — doing so
+> produces build numbers the stores have already seen and every upload fails.
 
 ## Building without shipping
 

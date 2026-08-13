@@ -85,10 +85,16 @@ jobs:
           fi
 
           # run_number is monotonic per workflow and never reused, so it is a
-          # safe build number even across re-runs of the same tag.
-          echo "name=$name"                       >> "$GITHUB_OUTPUT"
-          echo "code=${{ github.run_number }}"    >> "$GITHUB_OUTPUT"
-          echo "submit=$submit"                   >> "$GITHUB_OUTPUT"
+          # safe build number - but it starts at 1, while the stores already hold
+          # builds up to 5 (Play versionCode 5, iOS build 4) uploaded by hand
+          # before this pipeline existed. Both stores reject a build number that
+          # is not strictly greater than what they already have, so run_number is
+          # offset past the manual era. Never lower BUILD_NUMBER_OFFSET.
+          code=$(( ${{ github.run_number }} + 100 ))
+
+          echo "name=$name"    >> "$GITHUB_OUTPUT"
+          echo "code=$code"    >> "$GITHUB_OUTPUT"
+          echo "submit=$submit" >> "$GITHUB_OUTPUT"
 
           case "$platform" in
             android) echo "android=true" >> "$GITHUB_OUTPUT" ;;
