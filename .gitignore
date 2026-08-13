@@ -26,3 +26,6 @@ android/app/src/main/assets/public/
 
 # macOS
 .DS_Store
+
+# Local credentials (App Store Connect API key, etc.)
+.env.local

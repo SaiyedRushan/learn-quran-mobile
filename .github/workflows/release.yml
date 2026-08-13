@@ -1,0 +1,419 @@
+name: Release
+
+# Push a tag, get a build in front of testers.
+#
+#   git tag v1.2 && git push origin v1.2
+#     -> Android AAB  -> Play Console, internal testing track
+#     -> iOS IPA      -> TestFlight
+#
+# Promotion to production is deliberately NOT automated: both stores keep the
+# build in a testing track until you promote it by hand. That human gate is the
+# only thing standing between a bad commit and real users, since a Capacitor app
+# has no over-the-air update path to walk a mistake back — every fix is a new
+# binary and a new review.
+#
+# The tag is the single source of truth for the marketing version (v1.2 -> 1.2).
+# The build number is the workflow run number, which only ever increases, which
+# is exactly what both stores demand. scripts/set-version.mjs stamps both native
+# projects so they cannot drift.
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Marketing version to build, e.g. 1.2 (no leading v)'
+        required: true
+        type: string
+      platform:
+        description: Platform to release
+        type: choice
+        options: [all, android, ios]
+        default: all
+      submit:
+        description: Upload to the stores (uncheck to build artifacts only)
+        type: boolean
+        default: true
+
+# Two releases must never run at once: they would race for the same build
+# number and one would be rejected as a duplicate. Never cancel a release in
+# flight — a half-uploaded store submission is worse than a slow queue.
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  plan:
+    name: Plan release
+    runs-on: ubuntu-latest
+    outputs:
+      version_name: ${{ steps.v.outputs.name }}
+      version_code: ${{ steps.v.outputs.code }}
+      android: ${{ steps.v.outputs.android }}
+      ios: ${{ steps.v.outputs.ios }}
+      submit: ${{ steps.v.outputs.submit }}
+    steps:
+      - name: Resolve version and platforms
+        id: v
+        env:
+          # Via env rather than inlined: workflow inputs are user-controlled text
+          # and would otherwise be shell-injected into this script.
+          INPUT_VERSION: ${{ inputs.version }}
+          INPUT_PLATFORM: ${{ inputs.platform || 'all' }}
+          INPUT_SUBMIT: ${{ inputs.submit }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          if [ "${{ github.event_name }}" = "push" ]; then
+            name="${REF_NAME#v}"          # v1.2 -> 1.2
+            platform=all
+            submit=true
+          else
+            name="$INPUT_VERSION"
+            platform="$INPUT_PLATFORM"
+            submit="$INPUT_SUBMIT"
+          fi
+
+          if ! printf '%s' "$name" | grep -qE '^[0-9]+(\.[0-9]+){0,2}$'; then
+            echo "::error::Version must look like 1, 1.2 or 1.2.3 (got '$name'). Tags must be vX.Y."
+            exit 1
+          fi
+
+          # run_number is monotonic per workflow and never reused, so it is a
+          # safe build number even across re-runs of the same tag.
+          echo "name=$name"                       >> "$GITHUB_OUTPUT"
+          echo "code=${{ github.run_number }}"    >> "$GITHUB_OUTPUT"
+          echo "submit=$submit"                   >> "$GITHUB_OUTPUT"
+
+          case "$platform" in
+            android) echo "android=true" >> "$GITHUB_OUTPUT" ;;
+            ios)     echo "ios=true"     >> "$GITHUB_OUTPUT" ;;
+            all)     printf 'android=true\nios=true\n' >> "$GITHUB_OUTPUT" ;;
+            *)       echo "::error::Unknown platform '$platform'"; exit 1 ;;
+          esac
+
+      - name: Summary
+        run: |
+          {
+            echo "## Release ${{ steps.v.outputs.name }} (build ${{ steps.v.outputs.code }})"
+            echo ""
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Android | ${{ steps.v.outputs.android == 'true' && 'yes' || 'skipped' }} |"
+            echo "| iOS | ${{ steps.v.outputs.ios == 'true' && 'yes' || 'skipped' }} |"
+            echo "| Upload to stores | ${{ steps.v.outputs.submit }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+  android:
+    name: Android
+    needs: plan
+    if: needs.plan.outputs.android == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Stamp version
+        run: node scripts/set-version.mjs --name "${{ needs.plan.outputs.version_name }}" --code "${{ needs.plan.outputs.version_code }}"
+
+      - name: Capacitor sync
+        run: npx cap sync android
+
+      # The keystore lives only in secrets. It is written to a path under
+      # RUNNER_TEMP rather than the workspace so it can never be swept into a
+      # build artifact, and the runner is destroyed after the job regardless.
+      - name: Restore signing keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "::error::ANDROID_KEYSTORE_BASE64 is not set. See docs/RELEASING.md."
+            exit 1
+          fi
+          keystore="$RUNNER_TEMP/upload-keystore.jks"
+          printf '%s' "$KEYSTORE_BASE64" | base64 -d > "$keystore"
+
+          # build.gradle resolves storeFile through rootProject.file(), so an
+          # absolute path here keeps the keystore outside the repo.
+          cat > android/keystore.properties <<EOF
+          storeFile=$keystore
+          storePassword=$KEYSTORE_PASSWORD
+          keyAlias=$KEY_ALIAS
+          keyPassword=$KEY_PASSWORD
+          EOF
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      - name: Build signed AAB
+        working-directory: android
+        run: ./gradlew bundleRelease --no-daemon
+
+      # Fails the build rather than shipping an unsigned or debug-signed
+      # artifact, which Play would reject much later with a cryptic error.
+      - name: Verify the bundle is signed with the upload key
+        run: |
+          set -euo pipefail
+          aab=android/app/build/outputs/bundle/release/app-release.aab
+          if [ ! -f "$aab" ]; then
+            echo "::error::No AAB produced at $aab"
+            exit 1
+          fi
+          if unzip -l "$aab" | grep -q "META-INF/.*\.RSA\|META-INF/.*\.EC"; then
+            echo "Bundle carries a signature block."
+          else
+            echo "::error::AAB appears unsigned - keystore.properties was probably not picked up."
+            exit 1
+          fi
+
+      - name: Upload AAB artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-release-${{ needs.plan.outputs.version_name }}
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      # Play rejects a track upload whose versionCode already exists, so a
+      # re-run of the same release will fail here by design.
+      #
+      # The track name must match a closed testing track that already exists in
+      # the Play Console. "alpha" is the built-in closed track and is what the
+      # API expects unless you created a custom one, in which case use its exact
+      # name here.
+      - name: Upload to Play closed testing
+        if: needs.plan.outputs.submit == 'true'
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJsonPlainText: ${{ secrets.PLAY_SERVICE_ACCOUNT_JSON }}
+          packageName: app.learnquran.mobile
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          track: alpha
+          status: completed
+
+      - name: Clean up signing material
+        if: always()
+        run: rm -f android/keystore.properties "$RUNNER_TEMP/upload-keystore.jks"
+
+  ios:
+    name: iOS
+    needs: plan
+    if: needs.plan.outputs.ios == 'true'
+    runs-on: macos-15
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Stamp version
+        run: node scripts/set-version.mjs --name "${{ needs.plan.outputs.version_name }}" --code "${{ needs.plan.outputs.version_code }}"
+
+      - name: Capacitor sync
+        run: npx cap sync ios
+
+      - name: Install CocoaPods
+        working-directory: ios/App
+        run: pod install --repo-update
+
+      # A throwaway keychain, unlocked only for this job. The default login
+      # keychain is never touched and the runner is destroyed afterwards.
+      - name: Install signing certificate and profile
+        env:
+          CERT_P12_BASE64: ${{ secrets.IOS_DIST_CERT_P12_BASE64 }}
+          CERT_PASSWORD: ${{ secrets.IOS_DIST_CERT_PASSWORD }}
+          PROFILE_BASE64: ${{ secrets.IOS_PROVISIONING_PROFILE_BASE64 }}
+        run: |
+          set -euo pipefail
+          if [ -z "$CERT_P12_BASE64" ] || [ -z "$PROFILE_BASE64" ]; then
+            echo "::error::iOS signing secrets are not set. See docs/RELEASING.md."
+            exit 1
+          fi
+
+          cert="$RUNNER_TEMP/dist.p12"
+          profile="$RUNNER_TEMP/profile.mobileprovision"
+          keychain="$RUNNER_TEMP/build.keychain-db"
+          keychain_password="$(uuidgen)"
+
+          printf '%s' "$CERT_P12_BASE64" | base64 -d > "$cert"
+          printf '%s' "$PROFILE_BASE64" | base64 -d > "$profile"
+
+          security create-keychain -p "$keychain_password" "$keychain"
+          security set-keychain-settings -lut 21600 "$keychain"
+          security unlock-keychain -p "$keychain_password" "$keychain"
+          security import "$cert" -P "$CERT_PASSWORD" -A -t cert -f pkcs12 -k "$keychain"
+          # Lets codesign use the key without an interactive prompt, which would
+          # otherwise hang the runner until the job times out.
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$keychain_password" "$keychain" >/dev/null
+          # Only this keychain needs to be searchable: signing is fully manual and
+          # every identity it needs was just imported. Naming the login keychain
+          # here would need its absolute path anyway - a bare name resolves against
+          # the working directory and silently drops out of the search list.
+          security list-keychains -d user -s "$keychain"
+
+          profiles_dir="$HOME/Library/MobileDevice/Provisioning Profiles"
+          mkdir -p "$profiles_dir"
+          uuid=$(security cms -D -i "$profile" | plutil -extract UUID raw -)
+          cp "$profile" "$profiles_dir/$uuid.mobileprovision"
+
+          name=$(security cms -D -i "$profile" | plutil -extract Name raw -)
+          echo "PROVISIONING_PROFILE_NAME=$name" >> "$GITHUB_ENV"
+          echo "Installed profile: $name ($uuid)"
+
+      - name: Write export options
+        run: |
+          set -euo pipefail
+          cat > "$RUNNER_TEMP/ExportOptions.plist" <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key>
+            <string>app-store-connect</string>
+            <key>teamID</key>
+            <string>A3QCZ7J62Q</string>
+            <key>signingStyle</key>
+            <string>manual</string>
+            <key>provisioningProfiles</key>
+            <dict>
+              <key>app.learnquran.mobile</key>
+              <string>${PROVISIONING_PROFILE_NAME}</string>
+            </dict>
+            <key>uploadSymbols</key>
+            <true/>
+          </dict>
+          </plist>
+          EOF
+
+      # Manual signing with an explicit profile: automatic signing needs an
+      # interactive Xcode session with an Apple ID and cannot work on a runner.
+      - name: Archive
+        working-directory: ios/App
+        run: |
+          set -euo pipefail
+          xcodebuild archive \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Release \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGN_STYLE=Manual \
+            DEVELOPMENT_TEAM=A3QCZ7J62Q \
+            PROVISIONING_PROFILE_SPECIFIER="$PROVISIONING_PROFILE_NAME" \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            | xcbeautify && exit ${PIPESTATUS[0]}
+
+      - name: Export IPA
+        run: |
+          set -euo pipefail
+          xcodebuild -exportArchive \
+            -archivePath "$RUNNER_TEMP/App.xcarchive" \
+            -exportPath "$RUNNER_TEMP/export" \
+            -exportOptionsPlist "$RUNNER_TEMP/ExportOptions.plist" \
+            | xcbeautify && exit ${PIPESTATUS[0]}
+
+      - name: Upload IPA artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-release-${{ needs.plan.outputs.version_name }}
+          path: ${{ runner.temp }}/export/*.ipa
+          if-no-files-found: error
+
+      # The App Store Connect API key authenticates without an Apple ID or 2FA,
+      # which is the only workable option for an unattended runner.
+      - name: Upload to TestFlight
+        if: needs.plan.outputs.submit == 'true'
+        env:
+          API_KEY_ID: ${{ secrets.APPSTORE_API_KEY_ID }}
+          API_ISSUER_ID: ${{ secrets.APPSTORE_API_ISSUER_ID }}
+          API_KEY_P8: ${{ secrets.APPSTORE_API_PRIVATE_KEY }}
+        run: |
+          set -euo pipefail
+          mkdir -p ~/.appstoreconnect/private_keys
+          printf '%s' "$API_KEY_P8" > ~/.appstoreconnect/private_keys/AuthKey_${API_KEY_ID}.p8
+          ipa=$(find "$RUNNER_TEMP/export" -name '*.ipa' -print -quit)
+          xcrun altool --upload-app \
+            --type ios \
+            --file "$ipa" \
+            --apiKey "$API_KEY_ID" \
+            --apiIssuer "$API_ISSUER_ID"
+
+      - name: Clean up signing material
+        if: always()
+        run: |
+          security delete-keychain "$RUNNER_TEMP/build.keychain-db" 2>/dev/null || true
+          rm -rf ~/.appstoreconnect/private_keys "$RUNNER_TEMP/dist.p12" "$RUNNER_TEMP/profile.mobileprovision"
+
+  release-notes:
+    name: GitHub release
+    needs: [plan, android, ios]
+    # Runs when at least one platform succeeded and none failed, so a partial
+    # release still gets a record rather than vanishing.
+    if: always() && !failure() && !cancelled() && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v5
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      # --notes-start-tag must be omitted rather than passed empty: gh forwards an
+      # empty value to the API, which rejects it, and that would fail the very
+      # first release (when there is no previous tag to diff against). Building
+      # the argument list conditionally also avoids a retry that would collide
+      # with the draft release the first attempt may already have created.
+      - name: Create GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          args=(
+            --title "Learn Quran ${{ needs.plan.outputs.version_name }}"
+            --generate-notes
+          )
+          previous=$(git describe --tags --abbrev=0 "${{ github.ref_name }}^" 2>/dev/null || true)
+          if [ -n "$previous" ]; then
+            args+=(--notes-start-tag "$previous")
+            echo "Generating notes since $previous"
+          else
+            echo "No previous tag - generating notes from the full history"
+          fi
+          gh release create "${{ github.ref_name }}" "${args[@]}" artifacts/*

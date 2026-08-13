@@ -1,0 +1,88 @@
+name: CI
+
+# Fast sanity check on every PR. It deliberately does not sign or submit
+# anything: no secrets are exposed here, so a PR from a fork can never reach
+# the keystore or the store credentials.
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  android:
+    name: Android debug build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Setup Java
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dependencies
+        run: npm ci
+
+      # www/ is committed, so this only copies it into the native projects and
+      # wires up plugins. It does not need the sibling web repo.
+      - name: Capacitor sync
+        run: npx cap sync
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v5
+
+      # assembleDebug uses the built-in debug keystore, so this proves the
+      # project compiles without touching any release signing material.
+      - name: Build debug APK
+        working-directory: android
+        run: ./gradlew assembleDebug --no-daemon
+
+  ios:
+    name: iOS build
+    runs-on: macos-15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Setup Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Capacitor sync
+        run: npx cap sync
+
+      - name: Install CocoaPods
+        working-directory: ios/App
+        run: pod install --repo-update
+
+      # CODE_SIGNING_ALLOWED=NO compiles without certificates, which is the
+      # whole point on a PR: it catches Swift/Pod/config breakage without
+      # needing the distribution identity.
+      - name: Build (unsigned)
+        working-directory: ios/App
+        run: |
+          xcodebuild build \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -destination 'generic/platform=iOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcbeautify && exit ${PIPESTATUS[0]}
