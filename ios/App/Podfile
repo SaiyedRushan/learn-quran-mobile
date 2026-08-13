@@ -1,6 +1,6 @@
 require_relative '../../node_modules/@capacitor/ios/scripts/pods_helpers'
 
-platform :ios, '14.0'
+platform :ios, '15.0'
 use_frameworks!
 
 # workaround to avoid Xcode caching of Pods that requires
@@ -21,4 +21,16 @@ end
 
 post_install do |installer|
   assertDeploymentTarget(installer)
+
+  # Capacitor's own podspecs pin 14.0, and assertDeploymentTarget only ever
+  # raises a pod to 14.0 -- it will not lift one to match the app. Left alone the
+  # pods build against an older SDK floor than the app does, which Xcode warns
+  # about on every build. The app's own MinimumOSVersion is what App Store
+  # Connect reads, so this is only about keeping the two consistent.
+  installer.pods_project.targets.each do |target|
+    target.build_configurations.each do |config|
+      current = config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'].to_f
+      config.build_settings['IPHONEOS_DEPLOYMENT_TARGET'] = '15.0' if current < 15.0 && current != 0.0
+    end
+  end
 end
