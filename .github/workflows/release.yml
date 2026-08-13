@@ -235,6 +235,28 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      # The runner defaults to Xcode 16.4, which builds against the iOS 18.5 SDK.
+      # App Store Connect rejects that outright:
+      #
+      #   Validation failed (409) SDK version issue. This app was built with the
+      #   iOS 18.5 SDK. All iOS and iPadOS apps must be built with the iOS 26 SDK
+      #   or later.
+      #
+      # Selecting the newest installed Xcode 26.x rather than pinning an exact
+      # version keeps this working as the runner image is updated, and the guard
+      # below fails the job early if the image ever stops shipping one.
+      - name: Select Xcode 26
+        run: |
+          set -euo pipefail
+          xcode=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$xcode" ]; then
+            echo "::error::No Xcode 26.x on this runner. App Store Connect requires the iOS 26 SDK or later."
+            exit 1
+          fi
+          sudo xcode-select -s "$xcode/Contents/Developer"
+          echo "Using $xcode"
+          xcodebuild -version
+
       - name: Setup Node
         uses: actions/setup-node@v6
         with:

@@ -57,6 +57,21 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v5
 
+      # Match the release job's toolchain: the runner defaults to Xcode 16.4,
+      # whose iOS 18.5 SDK App Store Connect refuses to accept. Building PRs with
+      # the same Xcode the release uses means SDK-level breakage shows up here
+      # rather than at upload time.
+      - name: Select Xcode 26
+        run: |
+          set -euo pipefail
+          xcode=$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)
+          if [ -z "$xcode" ]; then
+            echo "::error::No Xcode 26.x on this runner."
+            exit 1
+          fi
+          sudo xcode-select -s "$xcode/Contents/Developer"
+          xcodebuild -version
+
       - name: Setup Node
         uses: actions/setup-node@v6
         with:
