@@ -201,7 +201,32 @@ builds Android and iOS in parallel, then creates the GitHub Release.
 will ship the previous web build. This keeps a release reproducible: the tag
 fully determines the binary.
 
+## When one platform fails
+
+Each store tracks its own build numbers, so the two platforms are free to
+diverge — v1.2 shipped as Android build 103 and iOS build 104 because iOS needed
+a second run. That is fine and needs no correction.
+
+To retry just the failed half, dispatch that one platform (**Actions → Release →
+Run workflow**, pick `android` or `ios`). Do **not** re-push the tag: the
+succeeded platform would rebuild and its store would reject the duplicate build
+number.
+
+A dispatched run creates no GitHub Release — there is no tag attached to it. If a
+tag run half-failed, create the release by hand once both platforms are up:
+
+```sh
+gh run download <run-id> -n android-release-<version> -D rel
+gh run download <run-id> -n ios-release-<version> -D rel
+gh release create v<version> --title "Learn Quran <version>" --generate-notes rel/*
+```
+
 ## Troubleshooting
+
+**TestFlight rejects the build with an SDK version error** — the runner defaulted
+to an older Xcode. The workflow selects the newest installed Xcode 26.x; if the
+image ever stops shipping one, the job fails early with a clear message rather
+than at upload time.
 
 **`scheme App is not configured`** — the shared scheme at
 `ios/App/App.xcodeproj/xcshareddata/xcschemes/App.xcscheme` was deleted. Recreate

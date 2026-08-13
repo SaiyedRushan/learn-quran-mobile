@@ -411,8 +411,12 @@ jobs:
   release-notes:
     name: GitHub release
     needs: [plan, android, ios]
-    # Runs when at least one platform succeeded and none failed, so a partial
-    # release still gets a record rather than vanishing.
+    # Only on a tag push, and only when nothing failed. A workflow_dispatch run
+    # has no tag to attach a release to, which is why recovering a half-failed
+    # tag release by re-dispatching one platform leaves no GitHub Release behind
+    # - create it by hand in that case:
+    #
+    #   gh release create vX.Y --title "Learn Quran X.Y" --generate-notes <files>
     if: always() && !failure() && !cancelled() && github.event_name == 'push'
     runs-on: ubuntu-latest
     steps:
