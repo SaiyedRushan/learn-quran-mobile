@@ -317,6 +317,14 @@ jobs:
           </plist>
           EOF
 
+      # Signing settings must go into the App target's own build configurations,
+      # never onto the xcodebuild command line: command-line build settings apply
+      # to every target in the workspace, and the CocoaPods framework targets
+      # reject a provisioning profile ("Capacitor does not support provisioning
+      # profiles"), which fails the whole archive.
+      - name: Configure signing for the App target
+        run: node scripts/set-ios-signing.mjs --profile "$PROVISIONING_PROFILE_NAME"
+
       # Manual signing with an explicit profile: automatic signing needs an
       # interactive Xcode session with an Apple ID and cannot work on a runner.
       - name: Archive
@@ -329,10 +337,6 @@ jobs:
             -configuration Release \
             -archivePath "$RUNNER_TEMP/App.xcarchive" \
             -destination 'generic/platform=iOS' \
-            CODE_SIGN_STYLE=Manual \
-            DEVELOPMENT_TEAM=A3QCZ7J62Q \
-            PROVISIONING_PROFILE_SPECIFIER="$PROVISIONING_PROFILE_NAME" \
-            CODE_SIGN_IDENTITY="Apple Distribution" \
             | xcbeautify && exit ${PIPESTATUS[0]}
 
       - name: Export IPA
