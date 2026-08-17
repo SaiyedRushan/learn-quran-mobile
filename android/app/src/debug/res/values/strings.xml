@@ -1,0 +1,9 @@
+<?xml version='1.0' encoding='utf-8'?>
+<!-- Debug source set: overrides the app label so the side-by-side debug install
+     is tellable apart from the Play build on the home screen and in the app
+     switcher. Only applies to debug builds; res/values/strings.xml still names
+     the release build "Learn Quran". -->
+<resources>
+    <string name="app_name">Learn Quran (dev)</string>
+    <string name="title_activity_main">Learn Quran (dev)</string>
+</resources>

@@ -54,3 +54,119 @@
 .site-footer div:has(> a[href*="play.google.com"]) {
   display: none !important;
 }
+
+/* Every top-level page opens with a "← All surahs" back link to the index. In
+   the app the brand mark in the header is always one tap away and goes to the
+   same place, so the link is dead weight at the top of every screen. Only the
+   ones pointing at the index go — the contextual ones (back to /drills/, to
+   /blog/, to a surah guide) are real up-navigation and stay. */
+.back-link[href="/"] {
+  display: none !important;
+}
+
+/* The hidden link took ~45px of vertical space with it, leaving the first block
+   of every one of those pages tight against the sticky header. Give some of it
+   back, and only on the pages that lost it — the home page and the drills hub
+   never had a back link and are already spaced correctly. */
+.wrap:has(> .back-link[href="/"]) {
+  padding-top: 28px;
+}
+
+/* ── Bottom tab bar on phones ──────────────────────────────────────────────
+   The website's phone nav is a hamburger in the top-right of the header. That
+   is right for a web page and wrong for an installed app, where the primary
+   destinations are expected to sit at the bottom of the screen, in reach of a
+   thumb.
+
+   No new markup is needed. PrimaryNav always renders the full link row
+   (.nav-desktop) and merely hides it under 600px, so the app can re-target that
+   same row as a fixed tab bar and hide the hamburger instead. React keeps
+   owning the row, so client-side navigation and any future change to the link
+   list flow through untouched.
+
+   Four destinations rather than six: About and Contact are read-once reference
+   pages, not places you tab between, and both stay linked in the footer.
+   Scoped to the same 600px breakpoint the web nav already switches at, so
+   tablets keep the inline header row. */
+@media (max-width: 600px) {
+  /* .site-header's backdrop-filter would make it the containing block for any
+     fixed-position descendant, which would pin the bar inside the header
+     instead of to the viewport. Drop the blur here and use the opaque chrome
+     colour instead — it is also the colour MainActivity paints the Android
+     system-bar strips, so the status bar blends into the header seam.
+
+     The header keeps its z-index:20 stacking context, so the bar's z-index
+     below resolves within it: the bar covers the page but is still covered by
+     the modal overlay (50) and the memorize-mode overlay (100), which is what
+     we want in both cases. */
+  .site-header {
+    background: var(--color-background-primary);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  .nav-desktop {
+    display: flex;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 45;
+    gap: 0;
+    align-items: stretch;
+    background: var(--color-background-primary);
+    border-top: 0.5px solid var(--color-border-tertiary);
+    /* Clears the iOS home indicator; 0 on Android, where MainActivity has
+       already inset the WebView above the navigation bar. */
+    padding: 4px 4px calc(4px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+  }
+  .nav-mobile {
+    display: none;
+  }
+
+  .nav-desktop .header-link[href="/about/"],
+  .nav-desktop .header-link[href="/contact/"] {
+    display: none;
+  }
+
+  .nav-desktop .header-link {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 40px;
+    padding: 6px 4px;
+    font-size: 12px;
+  }
+  /* :hover sticks after a tap on touch, which would leave a tab looking
+     selected. Move the pressed state to :active instead. */
+  .nav-desktop .header-link:hover {
+    background: none;
+    color: var(--color-text-secondary);
+  }
+  .nav-desktop .header-link:active {
+    background: var(--color-background-secondary);
+  }
+
+  /* Mark the current section. There is no route class on <body>, so each
+     section is identified by a marker only its pages render — the guide shell,
+     the dua list, and so on — plus the back link of its sub-pages (still in the
+     DOM when hidden, so :has() can read it). Deep pages that match nothing
+     simply light nothing up, which is why these stay conservative. */
+  body:has(.home-intro) .nav-desktop .header-link[href="/"],
+  body:has(.guide-shell) .nav-desktop .header-link[href="/"],
+  body:has(.back-link[href^="/surah/"]) .nav-desktop .header-link[href="/"],
+  body:has(.dua-list) .nav-desktop .header-link[href="/duas/"],
+  body:has(.gm-cards) .nav-desktop .header-link[href="/drills/"],
+  body:has(.back-link[href^="/drills/"]) .nav-desktop .header-link[href="/drills/"],
+  body:has(.blog-list) .nav-desktop .header-link[href="/blog/"],
+  body:has(.back-link[href="/blog/"]) .nav-desktop .header-link[href="/blog/"] {
+    color: var(--accent-bright);
+  }
+
+  /* Keep the bar from covering the end of the page. The footer is the last
+     thing above it, so the clearance goes there. */
+  .site-footer {
+    padding-bottom: calc(60px + var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px)));
+  }
+}

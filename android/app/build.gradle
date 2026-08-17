@@ -35,6 +35,15 @@ android {
         }
     }
     buildTypes {
+        debug {
+            // Install alongside the Play build rather than replacing it. The two
+            // are signed with different keys, so without a distinct application
+            // id a debug install is refused until the store build is uninstalled
+            // — and that uninstall takes the WebView's localStorage with it,
+            // which is where all memorization progress lives. Debug-only; the
+            // release build and everything CI does are untouched.
+            applicationIdSuffix ".debug"
+        }
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
