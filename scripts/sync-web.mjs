@@ -56,6 +56,19 @@ for (const file of await readdir(chunkDir, {recursive: true})) {
   analyticsStripped++;
 }
 
+// The update notice is app-only code with no counterpart on the website, so it
+// is copied in here rather than living in the web source. It is served from an
+// underscore-prefixed directory for the same reason /_next is: no exported
+// route can ever collide with it.
+//
+// app-version.json is what the notice compares against the published manifest.
+// It is written empty on purpose — scripts/set-version.mjs fills it in during a
+// release build, and a build that never went through set-version (a local
+// `npm run sync` and Run in Xcode) has no version to compare and shows nothing.
+await mkdir(path.join(www, "_app"), {recursive: true});
+await cp(path.join(root, "overrides", "update-notice.js"), path.join(www, "_app", "update-notice.js"));
+await writeFile(path.join(www, "app-version.json"), JSON.stringify({version: null, build: null}) + "\n");
+
 // The native app draws edge-to-edge under the iOS status bar / notch, so the
 // web export's viewport meta needs `viewport-fit=cover` for env(safe-area-inset-*)
 // to report real values. Inject it into every exported HTML file's viewport tag;
@@ -68,20 +81,31 @@ async function* htmlFiles(dir) {
     else if (entry.name.endsWith(".html")) yield p;
   }
 }
+// The same pass loads the update notice on every page. It goes at the end of
+// <head> rather than <body>: <body> is the App Router's hydration root, and an
+// extra child there is one more thing for React to reconcile, while <head> is
+// already full of injected script tags and is where React expects third-party
+// ones. `defer` keeps it off the critical path — it does not touch the DOM
+// until DOMContentLoaded either way.
+const UPDATE_NOTICE_TAG = '<script defer src="/_app/update-notice.js"></script>';
 let viewports = 0;
+let notices = 0;
 for await (const file of htmlFiles(www)) {
   const html = await readFile(file, "utf8");
-  const next = html.replace(
+  let next = html.replace(
     /(<meta name="viewport" content=")([^"]*)(")/g,
     (m, pre, content, post) => (/viewport-fit=/.test(content) ? m : `${pre}${content}, viewport-fit=cover${post}`),
   );
-  if (next !== html) {
-    await writeFile(file, next);
-    viewports++;
+  if (next !== html) viewports++;
+  if (!next.includes(UPDATE_NOTICE_TAG) && next.includes("</head>")) {
+    next = next.replace("</head>", `${UPDATE_NOTICE_TAG}</head>`);
+    notices++;
   }
+  if (next !== html) await writeFile(file, next);
 }
 
 console.log(
   `Synced ${webOut} -> www (${rewrites} CSS file(s) rewired to local fonts, ` +
-    `${viewports} HTML viewport(s) set to cover, ${analyticsStripped} chunk(s) de-analyticsed)`,
+    `${viewports} HTML viewport(s) set to cover, ${notices} page(s) wired to the update notice, ` +
+    `${analyticsStripped} chunk(s) de-analyticsed)`,
 );

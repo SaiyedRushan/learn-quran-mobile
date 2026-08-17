@@ -45,6 +45,68 @@ Use the **Actions → Release → Run workflow** button:
 Artifacts are attached to the run either way, so this is the way to test the
 pipeline end to end without touching a store.
 
+## Telling users to update
+
+Shipping a build does not get it onto anyone's phone. Auto-update is off for a
+lot of people, and with no over-the-air path a user who never taps "Update" in
+the store stays on the version they first installed indefinitely.
+
+So the app asks. Once a day at most, it reads `updates.json` from this repo's
+`main` branch, compares it against the version stamped into the binary, and — if
+it is behind — shows a dialog with the changelog and a link to the store. "Later"
+silences that version for good; the next release asks again.
+
+**Publishing the notice is a separate, later step from tagging.** The tag only
+starts a store review. Announcing 1.4 while 1.4 is still in review sends everyone
+to a store page that still offers 1.3, which looks broken.
+
+After the release is actually live in the store:
+
+```jsonc
+// updates.json, on main
+{
+  "latest": "1.4",          // the version now live in the stores
+  "minimum": "0",           // below this, the update cannot be dismissed
+  "store": {
+    "android": "https://play.google.com/store/apps/details?id=app.learnquran.mobile",
+    "ios": null             // fill in once the app is live on the App Store
+  },
+  "notes": {
+    "1.4": ["What changed, in the user's words — not commit subjects."]
+  }
+}
+```
+
+Commit it to `main` and it is live within minutes; nothing needs rebuilding. Keep
+the older `notes` entries — someone three releases behind sees every entry newer
+than what they have, which is the whole argument for updating.
+
+Rules worth respecting:
+
+- **`latest` must never lead the stores.** It is the one field that can strand
+  users on a dead-end store page. Set it after you have seen the release live.
+- **A `null` store URL disables the prompt on that platform**, which is the
+  correct state for iOS until the app has a public App Store page.
+- **`minimum` is the emergency lever.** Raising it makes the dialog
+  undismissible for anyone below it — the only recourse when a shipped build is
+  broken, since there is no way to pull it back. Leave it at `0` otherwise.
+- **The changelog is user-facing copy.** `--generate-notes` on the GitHub
+  Release is for you; this is for someone who just wants to know if it is worth
+  the download.
+
+The moving parts, if it ever misbehaves:
+
+| | |
+|---|---|
+| `overrides/update-notice.js` | the whole feature; app-only, injected into every page by `sync-web.mjs` |
+| `www/app-version.json` | which version this binary is, written by `set-version.mjs` at build time |
+| `updates.json` | what is live and what changed, served from `main` |
+
+A build that skipped `set-version.mjs` has `"version": null` and never prompts,
+which is what you want from a local Xcode or Android Studio run. This check is
+also the app's only network request: it times out at 8 seconds and fails silently,
+so the app stays fully usable offline.
+
 ## One-time setup
 
 Nine repository secrets, at **Settings → Secrets and variables → Actions**.

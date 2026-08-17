@@ -9,7 +9,7 @@
 //
 // In CI the name comes from the git tag and the code from the run number, but
 // both are plain arguments so a release can always be reproduced by hand.
-import {readFile, writeFile} from "node:fs/promises";
+import {readFile, stat, writeFile} from "node:fs/promises";
 import path from "node:path";
 import {fileURLToPath} from "node:url";
 
@@ -77,4 +77,25 @@ pbx = replaceAllExpecting(pbx, /CURRENT_PROJECT_VERSION = \d+;/g, `CURRENT_PROJE
 pbx = replaceAllExpecting(pbx, /MARKETING_VERSION = [^;]+;/g, `MARKETING_VERSION = ${versionName};`, 2, "MARKETING_VERSION");
 await writeFile(pbxPath, pbx);
 
-console.log(`Set version ${versionName} (build ${versionCode}) across android/ and ios/`);
+// --- Web layer -----------------------------------------------------------
+// The bundled web app needs to know which binary it is running inside, so the
+// update notice can tell whether the published release is actually newer.
+// Stamping it here rather than reading it back through the Capacitor bridge
+// means it can never disagree with what the stores were told, and it works
+// identically on both platforms.
+//
+// This must run before `npx cap sync`, which is what copies www/ into the
+// native projects — the CI release job already orders it that way.
+const versionPath = path.join(root, "www", "app-version.json");
+await writeFile(versionPath, JSON.stringify({version: versionName, build: Number(versionCode)}) + "\n");
+
+// Stamping a version into a www/ that predates the update notice would leave
+// nothing to read it. Not fatal — the build is fine, it just ships without the
+// prompt — but silence here would be indistinguishable from it working.
+try {
+  await stat(path.join(root, "www", "_app", "update-notice.js"));
+} catch {
+  console.warn("Warning: www/_app/update-notice.js is missing — this build will not prompt for updates. Run `npm run sync`.");
+}
+
+console.log(`Set version ${versionName} (build ${versionCode}) across android/, ios/ and www/`);

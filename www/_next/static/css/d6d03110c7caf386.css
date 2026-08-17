@@ -73,6 +73,44 @@
   padding-top: 28px;
 }
 
+/* ── Update notice ─────────────────────────────────────────────────────────
+   The "an update is available" dialog built by overrides/update-notice.js. It
+   reuses the web app's own .modal-overlay / .modal / .btn markup so it looks
+   like every other dialog in the app and follows the theme for free; only the
+   changelog list below is new. */
+.update-notice .update-notice-group + .update-notice-group {
+  margin-top: 14px;
+}
+.update-notice .update-notice-version {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-tertiary);
+  letter-spacing: 0.04em;
+}
+.update-notice .update-notice-list {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--color-text-secondary);
+}
+.update-notice .update-notice-list li + li {
+  margin-top: 4px;
+}
+/* The changelog sits between .modal-sub and the actions, and .modal-sub's own
+   18px bottom margin is meant to be the gap before the buttons. Restore it. */
+.update-notice .modal-actions {
+  margin-top: 18px;
+}
+/* "Update" is an anchor rather than a button — Capacitor only hands a real
+   link to the system browser — so it needs the parts of button styling that an
+   <a> does not get on its own. */
+.update-notice .modal-actions .btn[href] {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+}
+
 /* ── Bottom tab bar on phones ──────────────────────────────────────────────
    The website's phone nav is a hamburger in the top-right of the header. That
    is right for a web page and wrong for an installed app, where the primary

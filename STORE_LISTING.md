@@ -107,6 +107,11 @@ transliteration — use `Tabārak` and `Juz ʿAmma` here.
     "collection" for the Data safety form.
   - The mobile app contains no analytics SDK. (The website uses anonymous,
     cookieless Vercel Analytics; the app does not.)
+  - The app makes one outbound request, at most once a day: it fetches a static
+    JSON file over HTTPS to see whether a newer version has been released. It
+    sends no parameters and no identifiers, stores nothing server-side, and the
+    app works normally when it fails. Nothing about the user is transmitted, so
+    it does not change any answer above.
 - **Is data encrypted in transit?** N/A (no data collected). External links open
   in the system browser over HTTPS.
 - **Can users request data deletion?** Users can clear all local data by clearing

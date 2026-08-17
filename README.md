@@ -11,6 +11,9 @@ with **no internet connection**:
 - Progress, settings, and onboarding state persist in the WebView's localStorage.
 - Only the contact form and outbound hadith citation links need a connection
   (external links open in the system browser).
+- The one request the app makes on its own is a daily check for a newer release,
+  which shows an in-app changelog and a link to the store. It sends nothing, and
+  fails silently offline — see `docs/RELEASING.md`.
 
 ## Layout
 
@@ -19,6 +22,8 @@ capacitor.config.json   App id/name, webDir
 fonts/                  Bundled font files + fonts.css (committed)
 scripts/bundle-fonts.mjs  Re-downloads fonts if the web app's font list changes
 scripts/sync-web.mjs    Copies ../learn-quran/out -> www/, rewires CSS to local fonts
+overrides/              App-only CSS and JS layered onto the web build by sync-web
+updates.json            What version is live + its changelog, read by the app itself
 www/                    The synced web build (committed, so the repo builds standalone)
 android/                Native Android project (Gradle)
 ios/                    Native iOS project (Xcode)

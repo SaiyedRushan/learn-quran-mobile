@@ -53,6 +53,19 @@ platform rebuild and be rejected as a duplicate build number.
 
 Full detail, including the nine repository secrets: `docs/RELEASING.md`.
 
+## After a release is live: publish the update notice
+
+The app shows an "update available" dialog with the changelog, driven by
+`updates.json` on `main`. It is read live, so bumping it needs no build.
+
+**Bump `latest` only once the release is actually live in the store, not when
+the tag is pushed.** A tag only starts a review; pointing users at a store page
+that still serves the old version is worse than not asking at all. Add the
+user-facing changelog under `notes` at the same time and keep the old entries.
+
+`store.ios` is `null` until the app has a public App Store page — that disables
+the prompt on iOS and is deliberate. See `docs/RELEASING.md`.
+
 ## Gotchas
 
 - `www/`, `android/` and `ios/` are committed. `npx cap sync` regenerates the
